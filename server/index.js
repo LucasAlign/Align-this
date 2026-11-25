@@ -12,7 +12,8 @@ const credentials = process.env.ALIGN_USER && process.env.ALIGN_PASSWORD
 if (!credentials && !['127.0.0.1', '::1', 'localhost'].includes(host)) {
   throw new Error('Set ALIGN_USER and ALIGN_PASSWORD before binding to a shared interface.');
 }
-const discoveryEnabled = Boolean(process.env.BRAVE_SEARCH_API_KEY);
+const useSwan = process.env.DISCOVERY_SOURCE === 'swan';
+const discoveryEnabled = useSwan || Boolean(process.env.BRAVE_SEARCH_API_KEY);
 const hour = Number(process.env.DISCOVERY_HOUR ?? 6);
 if (!Number.isInteger(hour) || hour < 0 || hour > 23) throw new Error('DISCOVERY_HOUR must be 0–23.');
 const filename = process.env.ALIGN_DATABASE === ':memory:' ? ':memory:' : resolve(process.env.ALIGN_DATABASE || 'data/align.sqlite');
@@ -60,7 +61,7 @@ const server = createServer(async (request, response) => {
       response.writeHead(200, { 'Content-Type': type }).end(data);
       return;
     }
-    if (path === '/api' && method === 'GET') return json(200, { ...store.snapshot(), discoveryEnabled, discoveryHour: hour });
+    if (path === '/api' && method === 'GET') return json(200, { ...store.snapshot(), discoveryEnabled, discoverySource: useSwan ? "swan" : "brave", discoveryHour: hour });
     if (!['POST', 'PUT', 'DELETE'].includes(method) || !path.startsWith('/api/')) return json(404, { error: 'Not found.' });
     if (request.headers['sec-fetch-site'] === 'cross-site' || !/^application\/json(?:;|$)/i.test(request.headers['content-type'] || '')) {
       return json(415, { error: 'Use a same-origin JSON request.' });
@@ -89,4 +90,4 @@ server.listen(Number(process.env.PORT || 3000), host, () => {
   console.log(`Align-this listening on http://${host}:${server.address().port}`);
 });
 
-scheduleDiscovery(store, process.env.BRAVE_SEARCH_API_KEY, hour);
+scheduleDiscovery(store, process.env.BRAVE_SEARCH_API_KEY, hour, useSwan);

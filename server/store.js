@@ -126,17 +126,28 @@ export function openStore(filename) {
       put('candidates', candidate);
     }),
     saveCandidates: candidates => transaction(() => {
-      const known = new Set([...list('organizations').map(item => domain(item.website)), ...list('candidates').map(item => domain(item.source))]);
+      const items = [...list('organizations'), ...list('candidates')];
+      const keyOf = item => domain(item.website || (item.source?.includes('/swan/organization/') ? '' : item.source));
+      const known = new Set(items.map(keyOf).filter(Boolean));
+      const sources = new Set(items.map(item => item.source));
+      const nameKey = item => item.state + normalize(item.name.replace(/\b(inc|incorporated|llc|corp)\.?$/i, '').replace(/\bservices\b/gi, 'service'));
+      const names = new Set(items.map(nameKey));
       let added = 0;
       for (const item of candidates) {
-        const key = domain(item.source);
-        if (!key || known.has(key)) continue;
-        known.add(key);
+        const key = keyOf(item);
+        if (!item.source || sources.has(item.source) || names.has(nameKey(item)) || (key && known.has(key))) continue;
+        if (key) known.add(key);
+        sources.add(item.source);
+        names.add(nameKey(item));
         put('candidates', { ...item, id: randomUUID(), status: 'pending', discoveredOn: today() });
         added++;
       }
       return added;
     }),
+    completedDiscoveryRuns: source => db.prepare(`
+      SELECT count(*) AS count FROM discovery_runs
+      WHERE json_extract(data, '$.status') = 'completed' AND json_extract(data, '$.source') = ?
+    `).get(source).count,
     claimRun: day => {
       const startedAt = new Date().toISOString();
       const staleBefore = new Date(Date.now() - 20 * 60_000).toISOString();

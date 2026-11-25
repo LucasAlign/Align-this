@@ -1,3 +1,4 @@
+import { countyForRun, discoverSwan } from './swan-discovery.js';
 import { states, today } from '../src/model.js';
 import { website, clean } from './store.js';
 
@@ -39,16 +40,17 @@ export async function discover({ day, apiKey, fetcher = fetch, pause = () => new
   return [...results.values()];
 }
 
-export function scheduleDiscovery(store, apiKey, hour = 6) {
-  if (!apiKey) return;
+export function scheduleDiscovery(store, apiKey, hour = 6, useSwan = false) {
+  if (!apiKey && !useSwan) return;
   async function tick() {
     const day = today();
     const localHour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'America/New_York', hour: '2-digit', hourCycle: 'h23' }).format(new Date()));
     if (localHour < hour || !store.claimRun(day)) return;
     try {
-      const candidates = await discover({ day, apiKey });
+      const county = useSwan ? countyForRun(store.completedDiscoveryRuns('swan')) : null;
+      const candidates = county ? await discoverSwan(county) : await discover({ day, apiKey });
       const added = store.saveCandidates(candidates);
-      store.finishRun({ day, status: 'completed', added });
+      store.finishRun({ day, status: 'completed', added, source: county ? 'swan' : 'brave', area: county ? county.name + ' County, PA' : 'United States' });
     } catch (error) {
       store.finishRun({ day, status: 'failed', error: error.message });
       console.error('Discovery failed:', error.message);

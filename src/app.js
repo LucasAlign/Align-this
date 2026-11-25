@@ -196,9 +196,9 @@ function reportsPage() {
 }
 
 function discoveryPage() {
-  return headline('Organization discovery', data.discoveryEnabled ? `Runs daily at ${String(data.discoveryHour).padStart(2,'0')}:00 Eastern. Review candidates before adding them to outreach.` : 'Set BRAVE_SEARCH_API_KEY on the server to enable daily discovery.') +
+  return headline('Organization discovery', data.discoveryEnabled ? `Runs daily at ${String(data.discoveryHour).padStart(2,'0')}:00 Eastern. Review candidates before adding them to outreach.` : 'Set DISCOVERY_SOURCE=swan or configure BRAVE_SEARCH_API_KEY on the server to enable daily discovery.') +
     `<section class="panel"><h2>Review queue</h2>${data.candidates.length ? `<div class="entries">${data.candidates.map(item => `<article><div><h3>${escape(item.name)}</h3><p>${states[item.state].name} · Found ${item.discoveredOn}</p><p>${escape(item.summary)}</p><a href="${escape(item.source)}" target="_blank" rel="noopener noreferrer">View source</a></div><div class="actions">${button('approve','Review',`data-id="${item.id}" class="primary"`)}${button('dismiss','Dismiss',`data-id="${item.id}"`)}</div></article>`).join('')}</div>` : empty('No candidates waiting for review.')}</section>
-    <section class="panel"><h2>Run history</h2>${data.runs.length ? `<ul>${data.runs.map(run => `<li>${run.day} · ${escape(run.status)}${run.added !== undefined ? ` · ${run.added} new candidates` : ''}${run.error ? ` · ${escape(run.error)}` : ''}</li>`).join('')}</ul>` : empty('No discovery runs yet.')}</section>`;
+    <section class="panel"><h2>Run history</h2>${data.runs.length ? `<ul>${data.runs.map(run => `<li>${run.day} · ${escape(run.status)}${run.area ? ' · ' + escape(run.area) : ''}${run.added !== undefined ? ` · ${run.added} new candidates` : ''}${run.error ? ` · ${escape(run.error)}` : ''}</li>`).join('')}</ul>` : empty('No discovery runs yet.')}</section>`;
 }
 
 function render() {
