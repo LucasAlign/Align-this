@@ -1,0 +1,8 @@
+{
+  "name": "align-this",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=24"},
+  "scripts": {"dev": "node --env-file-if-exists=.env server/index.js", "start": "node --env-file-if-exists=.env server/index.js", "test": "node --test server/workflows.test.js"}
+}
